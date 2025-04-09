@@ -2,25 +2,14 @@
 startCommand:
   type: stdio
   configSchema:
-    type: object
-    properties:
-      port:
-        type: integer
-        default: 8000
-      host:
-        type: string
-        default: "0.0.0.0"
+    # JSON Schema defining the configuration options for the MCP.
+    {}
   commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
     |-
     (config) => ({
       "command": "python",
       "args": [
-        "-u",
         "mcp_handler.py"
       ],
-      "env": {
-        "PYTHONUNBUFFERED": "1",
-        "PORT": config.port.toString(),
-        "HOST": config.host
-      }
     }) 
