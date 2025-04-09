@@ -1,28 +1,17 @@
-FROM python:3.11-slim
+# Use a imagem oficial do Python como base
+FROM python:3.10-slim
 
+# Define o diretório de trabalho no container
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Copia os arquivos do projeto para o container
+COPY . .
 
-# Copy and install requirements first
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Instala as dependências
+RUN pip install fastmcp
 
-# Copy only necessary files
-COPY mcp_handler.py .
-COPY smithery.yaml .
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Expose the port that MCP will run on
+# Expõe a porta que o servidor MCP usará
 EXPOSE 8000
 
-# Command to run the application
-CMD ["python", "-u", "mcp_handler.py"] 
+# Comando para executar o servidor
+CMD ["python", "mcp_handler.py"] 
