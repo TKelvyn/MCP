@@ -6,6 +6,7 @@ from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import re
 
 mcp = FastMCP("Meuservidormcp")
 
@@ -14,7 +15,7 @@ def fetch_emails(remetente, senha, quantidade=10, remetente_filtro=None, palavra
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(remetente, senha)
-        mail.select("inbox")
+        mail.select("INBOX")  
 
         criteria = []
         if remetente_filtro:
@@ -25,20 +26,67 @@ def fetch_emails(remetente, senha, quantidade=10, remetente_filtro=None, palavra
             criteria.append(f'SINCE {data_inicio.strftime("%d-%b-%Y")} BEFORE {data_fim.strftime("%d-%b-%Y")}')
 
         search_criteria = " ".join(criteria) if criteria else "ALL"
+        print(f"Critérios de busca: {search_criteria}")  
         status, messages = mail.search(None, search_criteria)
         email_ids = messages[0].split()
 
-        emails = []
+        print(f"IDs de email encontrados: {email_ids}")  
+
+        dados_extraidos = []
+
         for email_id in email_ids[-quantidade:]:  
             status, msg_data = mail.fetch(email_id, "(RFC822)")
-            msg = email.message_from_bytes(msg_data[0][1])
-            subject, encoding = decode_header(msg["Subject"])[0]
-            if isinstance(subject, bytes):
-                subject = subject.decode(encoding if encoding else 'utf-8')
-            emails.append(subject)
+            
+            for response_part in msg_data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_bytes(response_part[1])
+                    subject, encoding = decode_header(msg["Subject"])[0]
+
+                    if isinstance(subject, bytes):
+                        subject = subject.decode(encoding or "utf-8")
+
+                    from_email = msg.get("From")
+
+                    body = ""
+                    if msg.is_multipart():
+                        for part in msg.walk():
+                            content_type = part.get_content_type()
+                            content_disposition = str(part.get("Content-Disposition"))
+
+                            if content_type == "text/plain" and "attachment" not in content_disposition:
+                                try:
+                                    body = part.get_payload(decode=True).decode("utf-8", "ignore")
+                                except UnicodeDecodeError:
+                                    body = part.get_payload(decode=True).decode("latin-1", "ignore")
+                                break
+                    else:
+                        try:
+                            body = msg.get_payload(decode=True).decode("utf-8", "ignore")
+                        except UnicodeDecodeError:
+                            body = msg.get_payload(decode=True).decode("latin-1", "ignore")
+                    
+                    print(f"Corpo do email: {body}")  
+
+                    match = re.search(r'-{4,}\s*\n(.*?)\n\s*-{4,}', body, re.DOTALL)
+
+                    if match:
+                        conteudo_extraido = match.group(1).strip()
+                        dados = {}
+                    
+                        for linha in conteudo_extraido.split("\n"):
+                            if ":" in linha:
+                                chave, valor = linha.split(":", 1)
+                                chave = chave.replace("*", "").strip()
+                                valor = valor.strip()
+                                dados[chave] = valor
+                            
+                        dados["Remetente"] = from_email
+                        dados["Assunto"] = subject
+
+                        dados_extraidos.append(dados)
 
         mail.logout()
-        return emails
+        return dados_extraidos  
     except Exception as e:
         print(f"Erro ao buscar emails: {e}")
         return []
