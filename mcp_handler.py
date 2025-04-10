@@ -11,11 +11,11 @@ import re
 mcp = FastMCP("Meuservidormcp")
 
 def fetch_emails(remetente, senha, quantidade=10, remetente_filtro=None, palavras=None, data_inicio=None, data_fim=None):
-    """ Conecta ao Gmail via IMAP e busca emails com filtros """
+    """ Conecta ao Gmail via IMAP e busca emails recebidos com filtros """
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(remetente, senha)
-        mail.select("INBOX")  
+        mail.select("INBOX")  # Seleciona a caixa de entrada
 
         criteria = []
         if remetente_filtro:
