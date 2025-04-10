@@ -1,7 +1,4 @@
 from mcp.server.fastmcp import FastMCP
-import smithery
-import mcp
-from mcp.client.websocket import websocket_client
 import imaplib
 import email
 from email.header import decode_header
@@ -46,15 +43,6 @@ def fetch_emails(remetente, senha, quantidade=10, remetente_filtro=None, palavra
         print(f"Erro ao buscar emails: {e}")
         return []
 
-@mcp.tool("fetch_emails_tool")
-async def fetch_emails_tool(remetente: str, senha: str, quantidade: int = 10, remetente_filtro: str = None, palavras: str = None, data_inicio: str = None, data_fim: str = None):
-    """ Tool para buscar emails via IMAP com filtros """
-    data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d") if data_inicio else None
-    data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d") if data_fim else None
-
-    emails = fetch_emails(remetente, senha, quantidade, remetente_filtro, palavras, data_inicio_dt, data_fim_dt)
-    return {"emails": emails}
-
 def send_email(remetente, senha, destinatario, assunto, corpo):
     """ Envia um email usando SMTP """
     try:
@@ -75,6 +63,15 @@ def send_email(remetente, senha, destinatario, assunto, corpo):
     except Exception as e:
         print(f"Erro ao enviar email: {e}")
         return {"status": "error", "message": str(e)}
+    
+@mcp.tool("fetch_emails_tool")
+async def fetch_emails_tool(remetente: str, senha: str, quantidade: int = 10, remetente_filtro: str = None, palavras: str = None, data_inicio: str = None, data_fim: str = None):
+    """ Tool para buscar emails via IMAP com filtros """
+    data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d") if data_inicio else None
+    data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d") if data_fim else None
+
+    emails = fetch_emails(remetente, senha, quantidade, remetente_filtro, palavras, data_inicio_dt, data_fim_dt)
+    return {"emails": emails}
 
 @mcp.tool("send_email_tool")
 async def send_email_tool(remetente: str, senha: str, destinatario: str, assunto: str, corpo: str):
